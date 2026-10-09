@@ -51,10 +51,10 @@ export default function PriceHistory({ listingId, currentRent }) {
       )}
 
       <div className="mt-4 flex h-28 items-end gap-2 sm:gap-3">
-        {points.map((p) => {
+        {points.map((p, i) => {
           const pct = 100 - ((p.price - min) / range) * 68 - 32;
           return (
-            <div key={p.date} className="group flex flex-1 flex-col items-center gap-1.5">
+            <div key={`${p.date}-${i}`} className="group flex flex-1 flex-col items-center gap-1.5">
               <span className="text-[10px] text-white/0 transition group-hover:text-white/70">{fmt(p.price)}</span>
               <div className="flex h-20 w-full max-w-[38px] items-end">
                 <div className="w-full rounded-t-md bg-gradient-to-t from-bronze/40 to-bronze"

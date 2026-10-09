@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>StayScout — Full-Stack Extension Report</title>
+<style>
+  @page { size: A4; margin: 16mm 14mm; }
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; color: #1a1a1a; font-size: 11.5px; line-height: 1.55; margin: 0; }
+  h1 { font-size: 26px; margin: 0 0 4px; color: #0d0d0d; letter-spacing: -0.5px; }
+  h2 { font-size: 16px; margin: 26px 0 8px; padding-bottom: 5px; border-bottom: 2px solid #c9a27a; color: #0d0d0d; }
+  h3 { font-size: 13px; margin: 16px 0 5px; color: #7a5c3a; }
+  p, li { margin: 5px 0; }
+  ul, ol { padding-left: 20px; }
+  code { background: #f3f0eb; padding: 1px 5px; border-radius: 4px; font-size: 10.5px; font-family: "SF Mono", Menlo, monospace; }
+  pre { background: #141414; color: #e8e0d4; padding: 10px 12px; border-radius: 8px; font-size: 10px; line-height: 1.5; overflow-x: hidden; font-family: "SF Mono", Menlo, monospace; }
+  table { border-collapse: collapse; width: 100%; margin: 8px 0 14px; font-size: 10.5px; }
+  th, td { border: 1px solid #dcd6cc; padding: 6px 8px; text-align: left; vertical-align: top; }
+  th { background: #f6f2ec; color: #0d0d0d; }
+  tr:nth-child(even) td { background: #fbfaf7; }
+  .cover { text-align: center; padding: 90px 30px 60px; page-break-after: always; }
+  .cover .tag { font-size: 11px; letter-spacing: 4px; text-transform: uppercase; color: #c9a27a; font-weight: 700; }
+  .cover .sub { font-size: 14px; color: #555; margin-top: 14px; }
+  .cover .meta { margin-top: 60px; font-size: 12px; color: #333; line-height: 2; }
+  .cover .rule { width: 70px; height: 3px; background: #c9a27a; margin: 24px auto; }
+  .badge { display: inline-block; background: #f0e7db; color: #7a5c3a; border: 1px solid #c9a27a; border-radius: 20px; padding: 2px 10px; font-size: 10px; font-weight: 600; margin: 2px; }
+  .note { background: #f6f2ec; border-left: 3px solid #c9a27a; padding: 8px 12px; margin: 10px 0; font-size: 11px; }
+  .ok { color: #167a3c; font-weight: 600; }
+  .break { page-break-before: always; }
+  .arch { background: #faf8f4; border: 1px solid #e6dfd4; border-radius: 8px; padding: 10px; font-family: "SF Mono", Menlo, monospace; font-size: 10px; white-space: pre; text-align: center; color: #333; }
+  .foot { margin-top: 30px; font-size: 9.5px; color: #888; border-top: 1px solid #ddd; padding-top: 6px; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════ COVER ═══════════ -->
+<div class="cover">
+  <div class="tag">Assignment Submission · Full-Stack Project</div>
+  <div class="rule"></div>
+  <h1>StayScout</h1>
+  <p class="sub">A Full-Stack Student PG Discovery Platform — extended with five<br/>data-driven features on a real MongoDB database</p>
+  <p class="sub" style="color:#999; font-size:12px; margin-top:6px;">React · Express · MongoDB · JWT Authentication</p>
+  <div class="meta">
+    <strong>Name:</strong> ______________________ &nbsp;&nbsp; <strong>Roll No:</strong> ______________________<br/>
+    <strong>College / Course:</strong> ______________________ &nbsp;&nbsp; <strong>Date:</strong> ______________________<br/><br/>
+    <strong>Project:</strong> PG / Accommodation Discovery Platform (StayScout)<br/>
+    <strong>Stack:</strong> Vite + React 18 + Tailwind (frontend) · Node.js + Express (REST API) · MongoDB 9.1 (database)<br/>
+    <strong>Database choice:</strong> MongoDB — installed via official ARM64 binary on macOS (no root / no Docker)<br/>
+    <strong>Features added:</strong> Price History Tracker · Budget Survival Planner · Move-In Availability Predictor · Maintenance Complaint Tracker · PG Switching Assistant<br/>
+    <strong>Roles:</strong> Student / Owner / Admin (JWT + bcrypt)
+  </div>
+</div>
+
+<!-- ═══════════ 1 ═══════════ -->
+<h2>1. Problem Statement &amp; Approach</h2>
+<p>The existing StayScout was a <strong>frontend-only</strong> React application (8 routes, 6 PG listings, wishlist/compare in localStorage) with no database, backend, login or roles. The requirement was to add a real database plus five new features <strong>without rebuilding or removing anything</strong> — keeping one cohesive product.</p>
+
+<h3>Database decision (original question: "MySQL is hard on macOS")</h3>
+<ul>
+  <li><strong>MySQL was skipped</strong> — it needs a Homebrew daemon, root password and a fixed port, which is fragile on Apple Silicon for a demo.</li>
+  <li><strong>MongoDB 9.1 (ARM64 official binary)</strong> was installed to <code>~/mongodb</code> with data in <code>~/mongodb/data</code>, running on port <strong>27017</strong> — no sudo, no Docker, no daemon manager.</li>
+  <li><strong>Why MongoDB fits:</strong> listings are deeply nested documents (mess menus, amenity arrays, safety objects) that would need 10+ SQL join tables; history collections still use relational-style <code>propertyId</code> references.</li>
+  <li>Express API runs on <strong>port 5001</strong> (port 5000 is permanently used by macOS AirPlay Receiver).</li>
+</ul>
+
+<h2>2. Architecture</h2>
+<div class="arch">┌───────────────────────┐    HTTP + JWT     ┌───────────────────────┐       ┌────────────┐
+│  React frontend       │ ────────────────► │  Express REST API     │ ────► │  MongoDB   │
+│  Vite · :5173         │   src/api.js      │  :5001 · 3 roles      │driver │  :27017    │
+│  (original UI kept)   │ ◄──────────────── │  validation + guards  │◄───── │  stayscout │
+└───────────────────────┘   JSON responses  └───────────────────────┘       └────────────┘</div>
+<div class="note"><strong>Graceful degradation:</strong> every API call in <code>src/api.js</code> has a fallback — if the server is off, the app reverts to the original localStorage behaviour. The site can never "die" during a demo.</div>
+
+<!-- ═══════════ 3 ═══════════ -->
+<h2 class="break">3. Data Model (MongoDB — database <code>stayscout</code>)</h2>
+<table>
+  <tr><th style="width:22%">Collection</th><th>Key fields</th><th style="width:30%">Purpose</th></tr>
+  <tr><td><code>users</code></td><td>name, email, passwordHash (bcrypt), role</td><td>Auth for student / owner / admin</td></tr>
+  <tr><td><code>properties</code></td><td>id, name, rent, bedsAvailable, commute, study, policy… (seeded from demo data)</td><td>Source of truth for listing rent + availability</td></tr>
+  <tr><td><code>priceHistory</code></td><td><strong>propertyId, oldPrice, newPrice, effectiveDate, changedBy</strong></td><td>Feature 1 — every rent change auto-archived</td></tr>
+  <tr><td><code>availabilityHistory</code></td><td><strong>propertyId, availableRooms, recordedAt</strong></td><td>Feature 3 — input for the predictor</td></tr>
+  <tr><td><code>complaints</code></td><td>propertyId, roomNumber, category, title, description, priority, status, timeline[], reportedBy</td><td>Feature 4 — ticket system</td></tr>
+  <tr><td><code>switchingPlans</code></td><td>userId, currentPGId, currentRent, deposit, noticePeriodDays, deductions, earliestMoveOut, estimatedRefund, steps[8]</td><td>Feature 5 — per-student plan</td></tr>
+  <tr><td><code>notifications</code></td><td>userId, text, read, at</td><td>Student alerts on status changes</td></tr>
+</table>
+<p><strong>Schema-change rule satisfied:</strong> price/availability history structures were created because the original app had no database; no existing table or API was replaced (there were none to replace).</p>
+
+<h2>4. API Endpoints</h2>
+<table>
+  <tr><th style="width:44%">Endpoint</th><th>Access</th><th>Behaviour</th></tr>
+  <tr><td><code>POST /api/auth/register · /login</code></td><td>Public</td><td>bcrypt hash + 7-day JWT; role in token</td></tr>
+  <tr><td><code>GET /api/listings[/:id]</code></td><td>Public</td><td>Live data from <code>properties</code></td></tr>
+  <tr><td><code>POST /api/price-history/update</code></td><td>owner / admin</td><td>Writes history row <em>and</em> syncs current rent atomically</td></tr>
+  <tr><td><code>GET /api/price-history/:propertyId</code></td><td>Public</td><td>Chart + table data</td></tr>
+  <tr><td><code>POST /api/availability/update</code></td><td>owner / admin</td><td>Updates beds + appends availability record</td></tr>
+  <tr><td><code>GET /api/availability-history/:id · /estimate/:id?days=N</code></td><td>Public</td><td>Trend estimate; refuses when &lt;3 records</td></tr>
+  <tr><td><code>POST /api/complaints/file · /:id/status</code></td><td>auth · owner/admin</td><td>Status machine Reported→In Progress→Resolved (no reverse); inserts student notification</td></tr>
+  <tr><td><code>GET /api/complaints/mine · /api/notifications</code></td><td>auth</td><td>Scoped by JWT user — never client-supplied IDs</td></tr>
+  <tr><td><code>POST /api/switching-plans · /:id/step</code> · <code>GET …/mine</code></td><td>auth</td><td>Plan CRUD; step toggles; progress %</td></tr>
+  <tr><td><code>GET /api/admin/overview</code></td><td>admin only (403 otherwise)</td><td>All price/availability/complaint/plan/user records</td></tr>
+</table>
+
+<!-- ═══════════ 5 ═══════════ -->
+<h2 class="break">5. The Five Features</h2>
+
+<h3>Feature 1 — PG Price Change Tracker</h3>
+<ul>
+  <li>New <strong>“📈 Price &amp; planning”</strong> tab on every property detail page: bronze bar chart + table of effective date, old→new price, changed-by.</li>
+  <li>Owner panel <strong>“Update rent”</strong> on the Owner Dashboard records <code>propertyId, oldPrice, newPrice, effectiveDate, changedBy</code> and updates the property in one server action — <strong>current price is always the latest history entry</strong>.</li>
+  <li>Property detail page reads its header rent from the DB, so prices stay synchronized (verified: seeded ₹8,500 → history shows 8,500→9,000→9,500 → header shows ₹9,500).</li>
+  <li><strong>No fake data:</strong> with zero records the panel states "No rent changes recorded yet."</li>
+</ul>
+
+<h3>Feature 2 — Budget Survival Planner</h3>
+<ul>
+  <li>Eight categories: PG Rent, Food, Electricity, Wi-Fi, Transport, Laundry, Personal Expenses, Other + total-budget slider.</li>
+  <li>Visual stacked bar; shows <strong>Total Monthly Expense</strong> and <strong>Remaining Budget</strong>; over-budget shows "⚠ exceed your budget by ₹X", otherwise "✓ fit within your budget".</li>
+  <li><strong>“Use This PG”</strong> button context: opening the planner from a property page pre-fills that PG's rent; optional comparison against another PG's rent.</li>
+  <li>Explicitly labelled <em>“An expense-planning tool — not financial advice.”</em> Saved per student (localStorage).</li>
+</ul>
+
+<h3>Feature 3 — Move-In Availability Predictor</h3>
+<ul>
+  <li>Student picks a <strong>Desired Move-In Date</strong>; panel shows PG name, current rooms, last updated, requested date and a status badge: 🟢 Likely Available / ⚠ Uncertain / 🔴 Currently Full.</li>
+  <li>Estimator computes beds/day slope across recorded history and extrapolates; shows <strong>"Based on N recent availability records."</strong> and "…is an estimate — the owner's live count wins."</li>
+  <li><strong>Honesty rule:</strong> with &lt;3 records it shows verbatim <em>"Not enough historical data to estimate future availability."</em></li>
+  <li>Owner panel <strong>“Update availability”</strong> appends <code>propertyId, availableRooms, recordedAt</code> automatically.</li>
+</ul>
+
+<h3>Feature 4 — Maintenance Complaint Tracker</h3>
+<ul>
+  <li>Form on the listing's <strong>“🔧 Maintenance”</strong> tab (visible to signed-in residents only): 8 categories, priority (Low/Medium/High), room number, title, description.</li>
+  <li>Status machine <strong>Reported → In Progress → Resolved</strong> with a timestamped <strong>timeline</strong> (server rejects reverse transitions).</li>
+  <li>Owner dashboard: filter by status / category / priority; one-click transitions with an optional note.</li>
+  <li>Each transition creates a <strong>notification</strong> for the student; Student dashboard shows <strong>My Complaints</strong> cards with the timeline; Admin sees everything.</li>
+</ul>
+
+<h3>Feature 5 — PG Switching Assistant</h3>
+<ul>
+  <li>Inputs: current PG, rent, security deposit, notice period, expected deductions → calculates <strong>Earliest Move-Out</strong> (today + notice) and <strong>Estimated Refund</strong> (deposit − deductions).</li>
+  <li><strong>Alternative PGs</strong> list with honest availability wording and a “✓ Fits” budget check.</li>
+  <li><strong>8-step plan</strong> (check notice → submit notice → deposit settlement → find PG → confirm PG → evidence → move-out → track refund) with tap-to-complete and a live <strong>progress bar</strong> (e.g. 13% → 25%).</li>
+  <li>Plan persisted per logged-in student in <code>switchingPlans</code>.</li>
+</ul>
+
+<h2>6. Dashboard Integration</h2>
+<table>
+  <tr><th>Dashboard</th><th>Route</th><th>Contents</th></tr>
+  <tr><td><strong>Student</strong></td><td><code>/dashboard</code></td><td>MY STAY (PG, rent, deposit, move-out) · Quick actions 💰 Budget 📈 Price 📅 Availability 🔧 Maintenance 🔄 Switch · Notifications · My Complaints (timelines) · Switching Assistant</td></tr>
+  <tr><td><strong>Owner</strong></td><td><code>/owner</code></td><td>Original analytics + listings table <span class="ok">(kept intact)</span> · Property Management (Update Rent / Availability) · Maintenance Requests with filters</td></tr>
+  <tr><td><strong>Admin</strong></td><td><code>/admin</code></td><td>Price changes · Availability history · Maintenance complaints · Switching reports · Users (role-gated 403)</td></tr>
+</table>
+
+<!-- ═══════════ 7 ═══════════ -->
+<h2 class="break">7. Security &amp; Access Control</h2>
+<ul>
+  <li><strong>Passwords:</strong> bcrypt (cost 10) — never stored in plain text.</li>
+  <li><strong>Sessions:</strong> JWT with role claim; every protected route passes <code>requireAuth</code> / <code>requireRole</code> middleware.</li>
+  <li><strong>RBAC:</strong> Student → own complaints, plans, planner, hub. Owner → own-property rent/availability/tickets. Admin → platform overview. <em>Verified: student token on an owner endpoint returned 403.</em></li>
+  <li><strong>Data isolation:</strong> complaints/plans/notifications are queried by the token's <code>userId</code> or property ownership — never by client-supplied IDs, so no user can read another's private data.</li>
+  <li><strong>Input validation:</strong> email format, password ≥6, rent ≥500, rooms ≥0, enum checks for role/category/priority/status, string length caps on title/description.</li>
+</ul>
+
+<h2>8. Testing Performed</h2>
+<ol>
+  <li><strong>10/10 API integration tests (curl):</strong> register 3 roles → rent update auto-archives history → history read-back → rent synchronized → availability update + estimate → honest "not enough data" → complaint filed → owner transition → <em>student notification arrived</em> → switching math (move-out 2026-11-08, refund ₹17,000) → <em>student blocked (403)</em> → admin overview returns all data.</li>
+  <li><strong>Browser regression of all original pages:</strong> Home, Results (college filter, rush toggle, no-curfew filter → "2 stays found", women-safe filter), Compare, Roommates (quiz + vacant-bed board), Marketplace, List Your PG, Owner analytics (3,550 views) — all intact.</li>
+  <li><strong>New-feature flows in browser:</strong> login → role redirect → My Stay + quick actions → notification + complaint timeline → switching step toggle persisted to DB.</li>
+  <li><strong>Bug found &amp; fixed during regression:</strong> duplicate React keys in the price chart when two records shared a date — fixed with composite keys; rebuild + clean console.</li>
+  <li><strong>Responsive:</strong> verified at 390 px (mobile) — tabs wrap, no overflow.</li>
+  <li><strong>Production build:</strong> <code>npm run build</code> → single-file <code>dist/index.html</code> succeeds.</li>
+</ol>
+
+<h2>9. Files Created &amp; Modified</h2>
+<table>
+  <tr><th style="width:12%">Type</th><th>Files</th></tr>
+  <tr><td><strong>Created</strong></td><td><code>server/index.js</code>, <code>server/auth.js</code>, <code>server/db.js</code>, <code>server/seed-data.js</code>, <code>src/api.js</code>, <code>src/context/AuthContext.jsx</code>, <code>src/pages/Auth.jsx</code>, <code>src/pages/StudentDashboard.jsx</code>, <code>src/pages/AdminDashboard.jsx</code>, <code>src/components/PriceHistory.jsx</code>, <code>MoveInAvailability.jsx</code>, <code>ComplaintForm.jsx</code>, <code>ComplaintTimeline.jsx</code>, <code>SwitchingAssistant.jsx</code>, <code>budgetConstants.js</code>, <code>README-stayscout.md</code></td></tr>
+  <tr><td><strong>Modified</strong></td><td><code>App.jsx</code> (+3 routes, none changed), <code>ListingDetail.jsx</code> (+2 tabs, DB rent sync), <code>OwnerDashboard.jsx</code> (+management panels, analytics untouched), <code>Navbar.jsx</code> (+account/sign-out), <code>BudgetPlanner.jsx</code> (upgraded in place)</td></tr>
+  <tr><td><strong>Untouched</strong></td><td>All original routes, components, design tokens, listings data, wishlist/compare localStorage schema, Results/Compare/Roommates/Marketplace/List pages</td></tr>
+</table>
+
+<h2>10. How to Run</h2>
+<pre># 1 · Database
+~/mongodb/mongodb-macos-aarch64--9.1.0/bin/mongod --dbpath ~/mongodb/data --port 27017
+
+# 2 · API server
+cd server &amp;&amp; npm start            # → http://localhost:5001
+
+# 3 · Frontend
+npm run dev                       # → http://localhost:5173</pre>
+<p><strong>Demo accounts</strong> (password <code>test123</code>): <code>stu@t.com</code> (student) · <code>own@t.com</code> (owner) · <code>adm@t.com</code> (admin)</p>
+<p><strong>Demo flow:</strong> login as owner → Update rent → login as student → open Sunrise House → 📈 tab shows recorded change → file a complaint → owner moves it to In Progress → student dashboard shows the notification → open switching plan → login as admin → show platform overview.</p>
+
+<h2>11. Limitations</h2>
+<ul>
+  <li>JWT secret is a demo constant in <code>server/auth.js</code> — should move to <code>.env</code> for production.</li>
+  <li>Availability estimator is intentionally a simple trend (day-slope) model, always labelled as an estimate.</li>
+  <li>Listing CRUD is still frontend-seeded; only rent/availability/complaints/plans flow through the database.</li>
+</ul>
+
+<div class="foot">StayScout · Full-Stack Assignment Report · React + Express + MongoDB · FIND → PERSONALIZE → COMPARE → ESTIMATE → GROUP → BOOK/STAY → ANALYZE → SUPPORT</div>
+</body>
+</html>

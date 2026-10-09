@@ -415,7 +415,7 @@ export const COMPLAINTS_SEED = [
 // ─── Move-out marketplace seeds ─────────────────────────────────────
 export const MARKET_ITEMS = [
   { id: 1, title: 'Study table + chair (2 yrs old)', price: 1200, seller: 'Aarav (passed out 2024)', cond: 'Good', img: 'https://images.unsplash.com/photo-1518455027359-f3f8164ba6bd?auto=format&fit=crop&w=600&q=80' },
-  { id: 2, title: 'Symphony air cooler', price: 2200, seller: 'Kunal (final year)', cond: 'Like new', img: 'https://images.unsplash.com/photo-1558030006-450675393462?auto=format&fit=crop&w=600&q=80' },
+  { id: 2, title: 'Symphony air cooler', price: 2200, seller: 'Kunal (final year)', cond: 'Like new', img: 'https://images.unsplash.com/photo-1730299789489-b55bf96b22bf?q=80&w=1365&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D' },
   { id: 3, title: 'B.Tech CSE books bundle', price: 800, seller: 'Priya (alumna)', cond: 'Good', img: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=600&q=80' },
   { id: 4, title: 'Bicycle — Hero Sprint', price: 3000, seller: 'Dev (moving to Bengaluru)', cond: 'Well used', img: 'https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&w=600&q=80' },
 ];
