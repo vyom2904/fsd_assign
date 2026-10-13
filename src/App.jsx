@@ -12,6 +12,7 @@ import Marketplace from './pages/Marketplace.jsx';
 import Auth from './pages/Auth.jsx';
 import StudentDashboard from './pages/StudentDashboard.jsx';
 import AdminDashboard from './pages/AdminDashboard.jsx';
+import ChatBox from './components/ChatBox.jsx';
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -46,6 +47,8 @@ export default function App() {
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="*" element={<Home />} />
       </Routes>
+      {/* Floating support assistant — available on every page */}
+      <ChatBox />
     </AuthProvider>
   );
 }

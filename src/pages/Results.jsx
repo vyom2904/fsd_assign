@@ -234,7 +234,7 @@ export default function Results() {
 
       {/* Compare tray */}
       {compare.ids.length > 0 && (
-        <div className="fixed inset-x-0 bottom-0 z-40 px-3 pb-3">
+        <div className="fixed inset-x-0 bottom-[84px] z-40 px-3 pb-3 sm:bottom-0 sm:pr-24">
           <div className="mx-auto flex max-w-3xl items-center gap-3 rounded-full border border-white/15 bg-[#181818]/95 px-5 py-3 shadow-2xl backdrop-blur-xl">
             <GitCompareArrows size={15} className="text-sky-300" />
             <p className="flex-1 text-[12.5px] text-white/75">

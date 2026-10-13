@@ -64,9 +64,10 @@ export function parseQuery(text) {
   if (/shar|twin|double/.test(t)) out.roomType = 'Sharing Room';
   if (/co-?living|premium/.test(t)) out.roomType = 'Co-living';
 
+  // Word-boundary match — plain includes() made "world cup" look like "LD"
   const college = COLLEGES.find((c) => {
     const words = c.name.toLowerCase().replace(/college|university/g, '').trim().split(/\s+/);
-    return words.some((w) => w.length >= 2 && t.includes(w));
+    return words.some((w) => w.length >= 2 && new RegExp(`\\b${w}\\b`).test(t));
   });
   if (college) out.collegeId = college.id;
 
